@@ -1,15 +1,18 @@
-import { Route, BrowserRouter } from 'react-router-dom';
+import React from 'react';
+import { Route, BrowserRouter, Routes } from 'react-router-dom';
 
 import Home from './pages/Home'
 import CreatePoint from './pages/CreatePoint'
 
-const Routes = () => {
+const Navigation = () => {
     return (
         <BrowserRouter>
-            <Route path="/" element={<Home />} />
-            <Route path="/create-point" element={<CreatePoint />} />
+            <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/create-point" element={<CreatePoint />} />
+            </Routes>
         </BrowserRouter>
     )
 }
 
-export default Routes;
+export default Navigation;
