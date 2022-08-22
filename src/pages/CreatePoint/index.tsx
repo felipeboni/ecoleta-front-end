@@ -1,13 +1,53 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from "react";
 import { Link } from 'react-router-dom';
-import { FiArrowLeft } from 'react-icons/fi'; 
-import { MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { FiArrowLeft } from 'react-icons/fi';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
 
-import './styles.css';
+import icon from './constants'
 
+import "./styles.css";
 import logo from '../../assets/logo.svg';
 
+interface MapProps {
+    [event: string]: any;
+}
+
+function LocationMarker() {
+    const [position, setPosition] = useState(null);
+    const [bbox, setBbox] = useState([]);
+
+    const map = useMap();
+
+    useEffect(() => {
+
+        map.locate().on("locationfound", function (event:MapProps) {
+            setPosition(event.latlng);
+
+            map.flyTo(event.latlng, map.getZoom());
+
+            const radius = event.accuracy;
+
+            const circle = L.circle(event.latlng, radius);
+
+            circle.addTo(map);
+
+            setBbox(event.bounds.toBBoxString().split(","));
+        });
+    }, [map]);
+
+    return position === null ? null : (
+        <Marker position={position} icon={icon}>
+            <Popup>
+                Você está aqui!
+            </Popup>
+        </Marker>
+    );
+}
+
 const CreatePoint = () => {
+
     return (
         <div id="page-create-point">
             <header>
@@ -19,7 +59,7 @@ const CreatePoint = () => {
             </header>
 
             <form>
-                <h1>Cadastro do <br/> ponto de coleta</h1>
+                <h1>Cadastro do <br /> ponto de coleta</h1>
 
                 {/* TODO: Image input */}
 
@@ -60,11 +100,16 @@ const CreatePoint = () => {
                         <span>Selecione o endereço no mapa</span>
                     </legend>
 
-                    <MapContainer center={[ 0, 0 ]} zoom={15} scrollWheelZoom={false}>
+                    <MapContainer
+                        center={[-15.7997171, -47.8662228]}
+                        zoom={13}
+                        scrollWheelZoom
+                        >
                         <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                            url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                         />
+                        <LocationMarker />
                     </MapContainer>
 
                     <div className="field-group">
