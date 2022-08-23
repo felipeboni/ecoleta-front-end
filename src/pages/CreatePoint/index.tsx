@@ -1,5 +1,5 @@
 import React, { useEffect, useState, ChangeEvent, FormEvent } from "react";
-import { Link } from 'react-router-dom';
+import { Link, useNavigate  } from 'react-router-dom';
 import api from '../../services/api'
 import { FiArrowLeft } from 'react-icons/fi';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
@@ -50,6 +50,37 @@ const CreatePoint = () => {
         whatsapp: ''
     })
 
+    const navigate = useNavigate();
+
+    useEffect(() => {
+      api.get('items').then(response => {
+        setItems(response.data);
+      })
+    }, [])
+
+    useEffect(() => {
+        axios.get<IBGUFResponse[]>('https://servicodados.ibge.gov.br/api/v1/localidades/estados')
+            .then(response => {
+                const ufInitials = response.data.map(uf => uf.sigla);
+                setUfs(ufInitials);
+            })
+    
+    }, [])
+
+    // Load cities when UF changes
+    useEffect(() => {
+        if (selectedUf === '0') return setCities([])
+
+        axios
+            .get<IBGCityResponse[]>(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedUf}/municipios`)
+            .then(response => {
+                const cityNames = response.data.map(city => city.nome)
+                setCities(cityNames)
+            })
+
+    }, [selectedUf])
+
+    
     function CurrentLocation() {
         const [bbox, setBbox] = useState([]);
         const map = useMap();
@@ -102,34 +133,6 @@ const CreatePoint = () => {
         
     }
 
-    useEffect(() => {
-      api.get('items').then(response => {
-        setItems(response.data);
-      })
-    }, [])
-
-    useEffect(() => {
-        axios.get<IBGUFResponse[]>('https://servicodados.ibge.gov.br/api/v1/localidades/estados')
-            .then(response => {
-                const ufInitials = response.data.map(uf => uf.sigla);
-                setUfs(ufInitials);
-            })
-    
-    }, [])
-
-    // Load cities when UF changes
-    useEffect(() => {
-        if (selectedUf === '0') return setCities([])
-
-        axios
-            .get<IBGCityResponse[]>(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedUf}/municipios`)
-            .then(response => {
-                const cityNames = response.data.map(city => city.nome)
-                setCities(cityNames)
-            })
-
-    }, [selectedUf])
-
     function handleSelectUf(event: ChangeEvent<HTMLSelectElement>) {
         setSelectedUf(event.target.value);
     }
@@ -168,7 +171,7 @@ const CreatePoint = () => {
         const [ latitude, longitude ] = selectedPosition
         const items = selectedItems;
 
-        const data = {
+        const requestData = {
             name,
             email,
             whatsapp,
@@ -179,19 +182,28 @@ const CreatePoint = () => {
             items
         };
 
-        const fetchData = async () => {
-            const response = await api.post('points', data);
+        const fetchData = async (requestData: object) => {
+            const response = await api.post('points', requestData);
             console.log({ response });
+
+            const { status } = response;
+
+            setTimeout(() => {
+                status === 200 ?
+                navigate("/", { replace: true }) :
+                null
+            }, 5000);
+
             return response;
         };
 
-        const callFunction = fetchData();
+        const callFunction = fetchData(requestData);
 
         toast.promise(
             callFunction,
             {
               loading: 'Criando o ponto de coleta...',
-              success: () => `${data.name} foi criado com sucesso!`,
+              success: () => `${requestData.name} foi criado com sucesso!`,
               error: (err) => `Ops! Ocorreu um erro: ${err.toString()}`,
             },
             {
@@ -200,7 +212,8 @@ const CreatePoint = () => {
                 minWidth: '250px',
               },
             }
-          );
+        );
+
     }
 
     return (
