@@ -8,6 +8,8 @@ import axios from 'axios';
 import L from "leaflet";
 import toast, { Toaster } from 'react-hot-toast';
 
+import DropzoneArea from '../../components/Dropzone'
+
 import { UserIcon, PointIcon } from './constants'
 
 import "./styles.css";
@@ -43,6 +45,8 @@ const CreatePoint = () => {
 
     const [selectedPosition, setSelectedPosition] = useState<[number, number]>([0, 0]);
     const [position, setPosition] = useState<[number, number]>([-15.7997171, -47.8662228]);
+
+    const [selectedFile, setSelectedFile] = useState<File>();
     
     const [ formData, setFormData ] = useState({
         name: '',
@@ -171,28 +175,28 @@ const CreatePoint = () => {
         const [ latitude, longitude ] = selectedPosition
         const items = selectedItems;
 
-        const requestData = {
-            name,
-            email,
-            whatsapp,
-            uf,
-            city,
-            latitude,
-            longitude,
-            items
-        };
+        const requestData = new FormData();
+
+
+        requestData.append('name', name);
+        requestData.append('email', email);
+        requestData.append('whatsapp', whatsapp);
+        requestData.append('uf', uf);
+        requestData.append('city', city);
+        requestData.append('latitude', String(latitude));
+        requestData.append('longitude', String(longitude));
+        requestData.append('items', items.join(','));
+
+        selectedFile && requestData.append('image', selectedFile);
+
+
 
         const fetchData = async (requestData: object) => {
             const response = await api.post('points', requestData);
-            console.log({ response });
 
             const { status } = response;
 
-            setTimeout(() => {
-                status === 200 ?
-                navigate("/", { replace: true }) :
-                null
-            }, 5000);
+            setTimeout(() => { status === 200 && navigate("/", { replace: true }) }, 5000);
 
             return response;
         };
@@ -203,7 +207,7 @@ const CreatePoint = () => {
             callFunction,
             {
               loading: 'Criando o ponto de coleta...',
-              success: () => `${requestData.name} foi criado com sucesso!`,
+              success: () => `${name} foi criado com sucesso!`,
               error: (err) => `Ops! Ocorreu um erro: ${err.toString()}`,
             },
             {
@@ -229,7 +233,7 @@ const CreatePoint = () => {
             <form onSubmit={handleSubmit}>
                 <h1>Cadastro do <br /> ponto de coleta</h1>
 
-                {/* TODO: Image input */}
+                <DropzoneArea onFileUploaded={setSelectedFile} />
 
                 <fieldset>
                     <legend><h2>Dados</h2></legend>
